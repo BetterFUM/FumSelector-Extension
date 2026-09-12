@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1
+
+- Reduced table layout and paint work for smoother scrolling.
+- Simplified the README to a short English overview and installation guide.
+
 ## 1.4.0
 
 - Restyled Pooya's original delete confirmation dialog while preserving its callbacks.

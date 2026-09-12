@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "FumSelector Extension",
   "description": "A clean light-mode view for Pooya's eligible course groups.",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "host_permissions": ["https://pooya.um.ac.ir/*"],
   "content_scripts": [
     {

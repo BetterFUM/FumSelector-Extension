@@ -1,32 +1,18 @@
 # FumSelector Extension
 
-FumSelector صفحهٔ **گروه‌های درسی مجاز** سامانهٔ پویا دانشگاه فردوسی مشهد را
-به یک رابط روشن، فشرده و خوانا با فونت محلی Vazirmatn تبدیل می‌کند.
+A clean, lightweight interface for the **Eligible Course Groups** page in the
+Ferdowsi University of Mashhad Pooya portal.
 
-![پیش‌نمایش FumSelector با داده‌های نمایشی](docs/fumselector-preview.png)
+![FumSelector preview with demo data](docs/fumselector-preview.png)
 
-تصویر بالا صرفاً نمایشی است و برنامهٔ واقعی هیچ دانشجویی را نشان نمی‌دهد.
+FumSelector adds a weekly schedule, conflict detection, course filters, column
+sorting, and a modern light design with the bundled Vazirmatn font. It keeps
+Pooya's original add and remove actions in sync.
 
-## توضیحات پروژه
+## Installation
 
-- برنامهٔ هفتگی شنبه تا چهارشنبه با نام درس، نام استاد و امکان حذف.
-- خواندن انتخاب‌های واقعی از تقویم پایین پویا به‌جای چک‌باکس‌های کش‌شده.
-- افزودن و حذف از طریق رویدادهای اصلی خود پویا.
-- تشخیص تداخل زمانی و تأیید جایگزینی درس‌های متداخل.
-- مودال حذف هماهنگ با ظاهر افزونه.
-- جستجو، فیلترهای آیکون‌دار و مرتب‌سازی تمام ستون‌ها.
-- نمایش عددی واحد و ظرفیت و انتقال درس‌های گذرانده‌شده به انتهای فهرست.
-- بدون وابستگی خارجی، Build step یا Popup نوار ابزار.
-
-## نصب
-
-1. فایل ZIP آخرین [Release](https://github.com/BetterFUM/FumSelector-Extension/releases/latest)
-   را دانلود و Extract کنید.
-2. `chrome://extensions` یا `edge://extensions` را باز کنید.
-3. گزینهٔ **Developer mode** را فعال کنید.
-4. روی **Load unpacked** بزنید و پوشه‌ای را انتخاب کنید که `manifest.json` در
-   ریشهٔ آن است.
-5. در پویا، از منوی «دروس تحصیلی» وارد «گروه‌های درسی مجاز» شوید.
-
-پس از هر به‌روزرسانی، یک‌بار روی **Reload** کارت افزونه بزنید و صفحهٔ پویا را
-دوباره باز کنید.
+1. Download and extract the ZIP from the [latest release](https://github.com/BetterFUM/FumSelector-Extension/releases/latest).
+2. Open `chrome://extensions` or `edge://extensions`.
+3. Enable **Developer mode**.
+4. Select **Load unpacked** and choose the extracted folder.
+5. Open Pooya and navigate to **Eligible Course Groups**.

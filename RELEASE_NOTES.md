@@ -1,10 +1,5 @@
-# FumSelector Extension 1.4.0
+# FumSelector Extension 1.4.1
 
-در این نسخه مودال حذف اصلی پویا با ظاهر FumSelector هماهنگ شده و عملکرد واقعی
-دکمه‌های حذف و انصراف آن بدون تغییر باقی مانده است.
-
-- آیکون برای همهٔ فیلترهای وضعیت.
-- حذف درس‌های دارای تداخل از فیلتر «قابل افزودن».
-- مرتب‌سازی صعودی و نزولی با کلیک روی همهٔ سرستون‌ها، شامل درس، استاد، واحد،
-  زمان، ظرفیت و وضعیت.
-- نسخهٔ ساده‌تر README شامل توضیحات پروژه و راهنمای نصب.
+This patch improves scrolling performance on long course lists by reducing
+off-screen painting and table layout work. The GitHub README is now shorter and
+contains only a project overview and installation instructions.
