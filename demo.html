@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fa" dir="rtl" data-fse-demo="1">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="content.css" />
+    <title>FumSelector — داده‌های نمایشی</title>
+    <script>
+      window.chrome = {
+        runtime: { getURL: path => path },
+        storage: { local: {} }
+      };
+
+      window.removeDemoCourse = (name, group) => {
+        document
+          .querySelectorAll(`.wc-cal-event[data-course-name="${name}"][data-group="${group}"]`)
+          .forEach(node => node.remove());
+      };
+
+      window.NewEvent = (_eventId, rowNumber) => {
+        const checkbox = document.getElementById(`PreSelectBox${rowNumber}`);
+        if (!checkbox?.checked) return;
+        const cells = checkbox.closest('tr').cells;
+        const name = cells[3].textContent.trim();
+        const group = cells[2].textContent.trim();
+        const event = document.createElement('div');
+        event.className = 'wc-cal-event';
+        event.dataset.courseName = name;
+        event.dataset.group = group;
+        event.innerHTML = `<div class="wc-title">${name}(0 نفر),گروه ${group}, ()</div>`;
+        event.addEventListener('click', () => removeDemoCourse(name, group));
+        document.querySelector('.wc-day-column-inner').append(event);
+      };
+    </script>
+    <script defer src="content.js"></script>
+  </head>
+  <body>
+    <h3>فهرست دروسی که دانشجو مجاز به انتخاب واحد می باشد</h3>
+    <table>
+      <tr><th>ردیف</th><th>شماره درس</th><th>گروه</th><th>نام درس</th><th>واحد</th><th>ثبت نام شده</th><th>ظرفیت</th><th>دانشکده</th><th>نام استاد</th><th></th></tr>
+      <tr><td>1<input id="PreSelectBox1" type="checkbox" onchange="NewEvent(1,1)"></td><td>23111106</td><td>3</td><td>آزمایشگاه الکترونیک ۱</td><td>1</td><td>4</td><td>12</td><td>مهندسی</td><td>ناصر حافظی مطلق</td><td><img title="body=[<b>جلسه یکم:</b> روز یکشنبه ساعت 8 (هر هفته به مدت 120 دقیقه در کلاس B-11)]"></td></tr>
+      <tr><td>2<input id="PreSelectBox2" type="checkbox" onchange="NewEvent(2,2)"></td><td>23112563</td><td>1</td><td>ماشین‌های الکتریکی ۲</td><td>3</td><td>29</td><td>35</td><td>مهندسی</td><td>حسین ضمیری جعفریان</td><td><img title="body=[<b>جلسه یکم:</b> روز شنبه ساعت 10 (هر هفته به مدت 90 دقیقه در کلاس B-25)<br><b>جلسه دوم:</b> روز دوشنبه ساعت 10 (هر هفته به مدت 90 دقیقه در کلاس B-25)]"></td></tr>
+      <tr><td>3<input id="PreSelectBox3" type="checkbox" onchange="NewEvent(3,3)"></td><td>23112654</td><td>2</td><td>سیستم‌های مخابراتی</td><td>3</td><td>30</td><td>30</td><td>مهندسی</td><td>محمدرضا حاجی‌ابراهیمی</td><td><img title="body=[<b>جلسه یکم:</b> روز شنبه ساعت 11 (هر هفته به مدت 90 دقیقه در کلاس D-23)]"></td></tr>
+      <tr><td>4<input id="PreSelectBox4" type="checkbox" onchange="NewEvent(4,4)"></td><td>23112585</td><td>5</td><td>آزمایشگاه سیستم‌های دیجیتال ۱</td><td>1</td><td>2</td><td>12</td><td>مهندسی</td><td>ایمان صداقت رنجبر</td><td><img title="body=[<b>جلسه یکم:</b> روز چهارشنبه ساعت 14 (هر هفته به مدت 120 دقیقه در کلاس 0)]"></td></tr>
+      <tr><td>5<input id="PreSelectBox5" type="checkbox" onchange="NewEvent(5,5)"></td><td>23112416</td><td>1</td><td>میدان‌ها و امواج</td><td>3</td><td>19</td><td>40</td><td>مهندسی</td><td>سیدمحمدسعید ماجدی</td><td><img title="body=[<b>جلسه یکم:</b> روز شنبه ساعت 10 (هر هفته به مدت 90 دقیقه در کلاس B-35)<br><b>جلسه دوم:</b> روز سه شنبه ساعت 10 (هر هفته به مدت 90 دقیقه در کلاس D-23)]"></td></tr>
+      <tr bgcolor="#d2eaf7"><td>6</td><td>531</td><td>142</td><td>انقلاب اسلامی ایران</td><td>2</td><td>0</td><td>45</td><td>معارف</td><td>علیرضا محمدی</td><td><img title="body=[<b>جلسه یکم:</b> روز چهارشنبه ساعت 10 (هر هفته به مدت 120 دقیقه در کلاس C-13)]"></td></tr>
+    </table>
+    <div id="calendar">
+      <div class="wc-day-column day-1"><div class="wc-day-column-inner">
+        <div class="wc-cal-event" data-course-name="ماشین‌های الکتریکی ۲" data-group="1" onclick="removeDemoCourse('ماشین‌های الکتریکی ۲','1')"><div class="wc-title">ماشین‌های الکتریکی ۲(29 نفر),گروه 1, (کلاس B-25)</div></div>
+        <div class="wc-cal-event" data-course-name="میدان‌ها و امواج" data-group="1" onclick="removeDemoCourse('میدان‌ها و امواج','1')"><div class="wc-title">میدان‌ها و امواج(19 نفر),گروه 1, (کلاس B-35)</div></div>
+      </div></div>
+    </div>
+  </body>
+</html>
