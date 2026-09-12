@@ -155,7 +155,10 @@
       trash: '<path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/>',
       check: '<path d="m5 12 4 4L19 6"/>',
       warning: '<path d="M12 3 2.8 19h18.4L12 3Z"/><path d="M12 9v4M12 16.5h.01"/>',
-      book: '<path d="M4 5a3 3 0 0 1 3-3h13v17H7a3 3 0 0 0-3 3V5Z"/><path d="M4 19h16"/>'
+      book: '<path d="M4 5a3 3 0 0 1 3-3h13v17H7a3 3 0 0 0-3 3V5Z"/><path d="M4 19h16"/>',
+      grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+      users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+      circleCheck: '<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>'
     };
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
@@ -199,6 +202,7 @@
     const courses = parseCourses(table);
     const demoMode = document.documentElement.dataset.fseDemo === '1';
     if (courses.length === 0) return;
+    courses.forEach((course, index) => { course.sourceIndex = index; });
 
     // Pooya's checkboxes are only transient controls and may be unchecked even
     // while a course is already present in the calendar. The calendar events
@@ -207,6 +211,8 @@
     let query = '';
     let professor = '';
     let status = 'all';
+    let sortKey = 'default';
+    let sortDirection = 'asc';
 
     document.title = 'گروه‌های درسی مجاز | FumSelector';
     injectFont();
@@ -251,18 +257,19 @@
       });
 
     const statuses = [
-      ['all', 'همه'],
-      ['available', 'قابل افزودن'],
-      ['selected', 'افزوده‌شده'],
-      ['open', 'ظرفیت خالی'],
-      ['passed', 'گذرانده‌شده']
+      ['all', 'همه', 'grid'],
+      ['available', 'قابل افزودن', 'plus'],
+      ['selected', 'افزوده‌شده', 'circleCheck'],
+      ['open', 'ظرفیت خالی', 'users'],
+      ['passed', 'گذرانده‌شده', 'book']
     ];
     const statusGroup = el('div', 'fse-segments');
     const statusButtons = new Map();
-    for (const [value, label] of statuses) {
-      const control = el('button', 'fse-segment', label);
+    for (const [value, label, iconName] of statuses) {
+      const control = el('button', 'fse-segment');
       control.type = 'button';
       control.dataset.value = value;
+      control.append(icon(iconName), document.createTextNode(label));
       control.addEventListener('click', () => {
         status = value;
         render();
@@ -280,8 +287,35 @@
     const resultTable = el('table', 'fse-table');
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
-    ['درس', 'استاد', 'واحد', 'زمان برگزاری', 'ظرفیت', ''].forEach(label => {
-      headerRow.append(el('th', '', label));
+    const sortHeaders = new Map();
+    const columns = [
+      ['name', 'درس'],
+      ['professor', 'استاد'],
+      ['units', 'واحد'],
+      ['time', 'زمان برگزاری'],
+      ['capacity', 'ظرفیت'],
+      ['action', 'وضعیت']
+    ];
+    columns.forEach(([key, label]) => {
+      const heading = el('th');
+      const sortButton = el('button', 'fse-sort-button');
+      const indicator = el('span', 'fse-sort-indicator', '↕');
+      sortButton.type = 'button';
+      sortButton.title = `مرتب‌سازی بر اساس ${label}`;
+      sortButton.setAttribute('aria-label', `مرتب‌سازی بر اساس ${label}`);
+      sortButton.append(document.createTextNode(label), indicator);
+      sortButton.addEventListener('click', () => {
+        if (sortKey === key) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        else {
+          sortKey = key;
+          sortDirection = 'asc';
+        }
+        renderRows();
+      });
+      heading.append(sortButton);
+      heading.setAttribute('aria-sort', 'none');
+      sortHeaders.set(key, { heading, indicator });
+      headerRow.append(heading);
     });
     thead.append(headerRow);
     const tbody = document.createElement('tbody');
@@ -334,12 +368,28 @@
       render();
     }
 
-    function setCourseSelected(course, selected) {
+    function waitForPortalDeleteButton(timeoutMs = 1600) {
+      return new Promise(resolve => {
+        const started = Date.now();
+        const inspect = () => {
+          const content = document.getElementById('DeleteLesID');
+          const dialog = content?.closest('.ui-dialog');
+          const removeButton = [...(dialog?.querySelectorAll('.ui-dialog-buttonpane button') ?? [])]
+            .find(control => normalize(control.textContent) === 'حذف');
+          if (removeButton) return resolve(removeButton);
+          if (Date.now() - started >= timeoutMs) return resolve(null);
+          window.setTimeout(inspect, 40);
+        };
+        inspect();
+      });
+    }
+
+    async function setCourseSelected(course, selected, confirmPortalDelete = false) {
       const control = course.sourceControl;
-      if (course.passed || isSelected(course) === selected) return;
+      if (course.passed || isSelected(course) === selected) return false;
 
       if (selected) {
-        if (!control || control.disabled) return;
+        if (!control || control.disabled) return false;
         // A real checkbox click runs Pooya's NewEvent(...) add handler. Its
         // checked state is deliberately ignored when reading the current plan.
         if (control.checked) control.checked = false;
@@ -348,13 +398,19 @@
         // Pooya attaches its real delete behavior to the rendered calendar
         // event. Clicking that event preserves its own request and UI flow.
         const calendarEvent = calendarEventsFor(course)[0];
-        if (!calendarEvent) return;
+        if (!calendarEvent) return false;
         calendarEvent.click();
+        if (confirmPortalDelete) {
+          const removeButton = await waitForPortalDeleteButton();
+          if (!removeButton) return false;
+          removeButton.click();
+        }
       }
 
       window.setTimeout(syncFromPortal, 80);
       window.setTimeout(syncFromPortal, 600);
       window.setTimeout(syncFromPortal, 1400);
+      return true;
     }
 
     function sessionsClash(first, second) {
@@ -422,7 +478,8 @@
         closeDialog(backdrop);
         for (const conflict of conflicts) {
           if (isSelected(conflict)) {
-            setCourseSelected(conflict, false);
+            const removalStarted = await setCourseSelected(conflict, false, true);
+            if (!removalStarted) return;
             await new Promise(resolve => window.setTimeout(resolve, 250));
           }
         }
@@ -455,6 +512,32 @@
       const selectedIds = new Set(plan.map(item => item.id));
       const selectedCodes = new Set(plan.map(item => item.code));
 
+      const sortValue = (course, key) => {
+        if (key === 'name') return course.name;
+        if (key === 'professor') return course.professor || '';
+        if (key === 'units') return Number(course.units) || 0;
+        if (key === 'capacity') return course.capacity ? Math.max(0, course.capacity - course.enrolled) : -1;
+        if (key === 'time') {
+          return (course.sessions ?? []).reduce((earliest, session) => {
+            const dayIndex = WEEK_DAYS.findIndex(day => normalize(day).replace(/\s/g, '') === normalize(session.day).replace(/\s/g, ''));
+            if (dayIndex < 0 || !Number.isFinite(session.start)) return earliest;
+            return Math.min(earliest, dayIndex * 1440 + session.start);
+          }, Number.POSITIVE_INFINITY);
+        }
+        if (key === 'action') {
+          if (course.passed) return 3;
+          if (isSelected(course)) return 0;
+          return conflictsFor(course).length > 0 ? 2 : 1;
+        }
+        return course.sourceIndex;
+      };
+
+      const compareValues = (first, second) => {
+        if (first === second) return 0;
+        if (typeof first === 'number' && typeof second === 'number') return first < second ? -1 : 1;
+        return String(first).localeCompare(String(second), 'fa', { numeric: true, sensitivity: 'base' });
+      };
+
       return courses
         .filter(course => {
           const haystack = normalize(`${course.name} ${course.code} ${course.group} ${course.professor} ${course.faculty}`);
@@ -465,11 +548,17 @@
           if (!course.passed && selectedCodes.has(course.code) && !selected) return false;
           if (status === 'passed') return course.passed;
           if (status === 'selected') return selected;
-          if (status === 'available') return !course.passed && !selected;
+          if (status === 'available') return !course.passed && !selected && conflictsFor(course).length === 0;
           if (status === 'open') return !course.passed && (!course.capacity || course.enrolled < course.capacity);
           return true;
         })
-        .sort((a, b) => Number(a.passed) - Number(b.passed));
+        .sort((a, b) => {
+          const passedOrder = Number(a.passed) - Number(b.passed);
+          if (passedOrder !== 0) return passedOrder;
+          const order = compareValues(sortValue(a, sortKey), sortValue(b, sortKey));
+          if (order !== 0) return sortDirection === 'asc' ? order : -order;
+          return a.sourceIndex - b.sourceIndex;
+        });
     }
 
     function renderPlan() {
@@ -596,6 +685,11 @@
 
     function renderRows() {
       const visible = filteredCourses();
+      for (const [key, parts] of sortHeaders) {
+        const active = sortKey === key;
+        parts.heading.setAttribute('aria-sort', active ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none');
+        parts.indicator.textContent = active ? (sortDirection === 'asc' ? '↑' : '↓') : '↕';
+      }
       tbody.replaceChildren();
       resultCount.textContent = `${visible.length} درس از ${courses.length} درس`;
       tableWrap.hidden = visible.length === 0;

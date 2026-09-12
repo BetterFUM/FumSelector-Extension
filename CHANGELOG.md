@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- Restyled Pooya's original delete confirmation dialog while preserving its callbacks.
+- Added icons to every status filter.
+- Excluded timetable conflicts from the `قابل افزودن` filter.
+- Added ascending and descending sorting to every course-table column.
+- Simplified the project README.
+
 ## 1.3.0
 
 - Read selected courses from Pooya's `.wc-cal-event` calendar instead of stale

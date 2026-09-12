@@ -11,10 +11,46 @@
         storage: { local: {} }
       };
 
+      window.closeDemoDeleteDialog = () => {
+        document.querySelector('.ui-widget-overlay')?.remove();
+        document.querySelector('[aria-labelledby="ui-dialog-title-DeleteLesID"]')?.remove();
+      };
+
       window.removeDemoCourse = (name, group) => {
-        document
-          .querySelectorAll(`.wc-cal-event[data-course-name="${name}"][data-group="${group}"]`)
-          .forEach(node => node.remove());
+        if (document.getElementById('DeleteLesID')) return;
+        const overlay = document.createElement('div');
+        overlay.className = 'ui-widget-overlay';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'ui-dialog ui-widget ui-widget-content ui-corner-all ui-draggable ui-resizable';
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-labelledby', 'ui-dialog-title-DeleteLesID');
+        dialog.innerHTML = `
+          <div class="ui-dialog-titlebar ui-widget-header ui-corner-all ui-helper-clearfix">
+            <span class="ui-dialog-title" id="ui-dialog-title-DeleteLesID">حذف درس از برنامه</span>
+            <a href="#" class="ui-dialog-titlebar-close ui-corner-all" role="button"><span class="ui-icon ui-icon-closethick">close</span></a>
+          </div>
+          <div id="DeleteLesID" class="ui-dialog-content ui-widget-content">
+            <p><span></span>آیا از حذف درس از لیست پیش انتخاب خود اطمینان دارید؟</p>
+          </div>
+          <div class="ui-dialog-buttonpane ui-widget-content ui-helper-clearfix">
+            <button type="button" class="ui-state-default ui-corner-all">حذف</button>
+            <button type="button" class="ui-state-default ui-corner-all">انصراف</button>
+          </div>`;
+
+        const controls = dialog.querySelectorAll('.ui-dialog-buttonpane button');
+        controls[0].addEventListener('click', () => {
+          document
+            .querySelectorAll(`.wc-cal-event[data-course-name="${name}"][data-group="${group}"]`)
+            .forEach(node => node.remove());
+          closeDemoDeleteDialog();
+        });
+        controls[1].addEventListener('click', closeDemoDeleteDialog);
+        dialog.querySelector('.ui-dialog-titlebar-close').addEventListener('click', event => {
+          event.preventDefault();
+          closeDemoDeleteDialog();
+        });
+        document.body.append(overlay, dialog);
       };
 
       window.NewEvent = (_eventId, rowNumber) => {

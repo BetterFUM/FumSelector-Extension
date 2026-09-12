@@ -81,7 +81,8 @@
 .fse-select { height: 38px; padding: 0 10px; border: 1px solid #dbe3ef; border-radius: 10px; outline: 0; color: #334155; background: #f8fafc; cursor: pointer; font-size: 11px; }
 .fse-select:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px #dbeafe; }
 .fse-segments { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: #f1f5f9; }
-.fse-segment { min-height: 32px; padding: 0 8px; border: 0; border-radius: 7px; color: #64748b; background: transparent; cursor: pointer; white-space: nowrap; font-size: 9.5px; }
+.fse-segment { min-height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 8px; border: 0; border-radius: 7px; color: #64748b; background: transparent; cursor: pointer; white-space: nowrap; font-size: 9.5px; }
+.fse-segment .fse-icon { width: 13px; height: 13px; }
 .fse-segment:hover { color: #1d4ed8; background: #e2e8f0; }
 .fse-segment.is-active { color: #1d4ed8; background: white; box-shadow: 0 1px 4px rgba(15, 23, 42, .12); font-weight: 750; }
 
@@ -91,6 +92,14 @@
 .fse-table-wrap { overflow-x: auto; }
 .fse-table { width: 100%; min-width: 940px; border-collapse: collapse; border-spacing: 0; text-align: center; }
 .fse-table th { padding: 8px 11px; color: #64748b; background: #f8fafc; text-align: center; font-size: 9.5px; font-weight: 650; white-space: nowrap; }
+.fse-sort-button { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 1px 4px; border: 0; border-radius: 6px; color: inherit; background: transparent; cursor: pointer; font-weight: 700; }
+.fse-sort-button:hover { color: #1d4ed8; background: #eaf2ff; }
+.fse-sort-button:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.fse-sort-indicator { width: 12px; color: #94a3b8; font-size: 11px; line-height: 1; }
+.fse-table th[aria-sort="ascending"] .fse-sort-button,
+.fse-table th[aria-sort="descending"] .fse-sort-button { color: #1d4ed8; }
+.fse-table th[aria-sort="ascending"] .fse-sort-indicator,
+.fse-table th[aria-sort="descending"] .fse-sort-indicator { color: #2563eb; }
 .fse-table td { padding: 8px 11px; border-top: 1px solid #edf0f5; vertical-align: middle; }
 .fse-table tbody tr { transition: background .15s; }
 .fse-table tbody tr:hover { background: #f8fbff; }
@@ -149,6 +158,65 @@
 .fse-dialog-conflict strong { color: #92400e; font-size: 11px; }
 .fse-dialog-conflict span { margin-top: 2px; color: #a16207; font-size: 9px; }
 .fse-dialog-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 7px; margin-top: 3px; }
+
+/* Pooya's original delete dialog stays functional; only its presentation is replaced. */
+.fse-page .ui-widget-overlay {
+  position: fixed !important; inset: 0 !important; z-index: 1000 !important;
+  width: auto !important; height: auto !important; opacity: 1 !important;
+  background: rgba(15, 23, 42, .44) !important; backdrop-filter: blur(3px);
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] {
+  position: fixed !important; top: 50% !important; left: 50% !important;
+  z-index: 1002 !important; width: min(410px, calc(100vw - 32px)) !important;
+  height: auto !important; padding: 0 !important; border: 1px solid #fecaca !important;
+  border-radius: 17px !important; outline: 0 !important; overflow: hidden !important;
+  color: #172033 !important; background: white !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .28) !important;
+  transform: translate(-50%, -50%); direction: rtl;
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-titlebar {
+  min-height: 58px; display: flex; align-items: center; padding: 12px 16px !important;
+  border: 0 !important; border-bottom: 1px solid #fee2e2 !important;
+  border-radius: 0 !important; color: #991b1b !important; background: #fff7f7 !important;
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-title {
+  display: inline-flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 850;
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-title::before {
+  width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px;
+  content: "!"; color: #b91c1c; background: #fee2e2; font-size: 17px; font-weight: 900;
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-titlebar-close {
+  position: absolute !important; top: 17px !important; left: 14px !important; right: auto !important;
+  width: 25px !important; height: 25px !important; display: grid !important; place-items: center;
+  margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 7px !important;
+  color: #64748b !important; background: transparent !important; text-decoration: none; font-size: 0;
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-titlebar-close::before { content: "×"; font-size: 20px; line-height: 1; }
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-titlebar-close:hover { color: #991b1b !important; background: #fee2e2 !important; }
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-titlebar-close .ui-icon { display: none !important; }
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-content {
+  min-height: 0 !important; padding: 18px 18px 14px !important; border: 0 !important;
+  color: #475569 !important; background: white !important; font-size: 11.5px; line-height: 1.9;
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-content p { margin: 0 !important; }
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-content p > span { display: none !important; }
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-buttonpane {
+  display: flex !important; align-items: center; justify-content: flex-end; gap: 7px;
+  margin: 0 !important; padding: 0 18px 18px !important; border: 0 !important; background: white !important;
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-buttonpane button {
+  min-height: 34px; margin: 0 !important; padding: 5px 13px !important;
+  border: 1px solid #dbe3ef !important; border-radius: 9px !important;
+  color: #334155 !important; background: white !important; cursor: pointer; font-size: 10.5px; font-weight: 780;
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-buttonpane button:first-of-type {
+  border-color: #ef4444 !important; color: white !important; background: #dc2626 !important;
+  box-shadow: 0 5px 13px rgba(220, 38, 38, .2);
+}
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-buttonpane button:first-of-type:hover { background: #b91c1c !important; }
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-dialog-buttonpane button:last-of-type:hover { color: #1d4ed8 !important; border-color: #bfdbfe !important; background: #eff6ff !important; }
+.fse-page .ui-dialog[aria-labelledby="ui-dialog-title-DeleteLesID"] .ui-resizable-handle { display: none !important; }
 
 @media (max-width: 1050px) {
   .fse-filters { grid-template-columns: 1fr 220px; }
