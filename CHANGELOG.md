@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.3
+
+- Fixed the blank eligible-course page in Pooya's RTL iframe by moving the
+  preserved calendar source into a fixed off-screen layer that cannot enlarge
+  the page's scroll area.
+
 ## 1.5.2
 
 - Restored the portal tooltip parser for the eligible-course table's time column.

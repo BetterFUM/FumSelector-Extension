@@ -21,7 +21,7 @@ html.fse-frame { width: 100% !important; min-width: 0 !important; min-height: 10
 .fse-page button,
 .fse-page input,
 .fse-page select { font: inherit; }
-.fse-source { position: absolute !important; top: 0 !important; left: -100000px !important; width: 1200px !important; min-height: 100vh !important; overflow: hidden !important; visibility: hidden !important; pointer-events: none !important; }
+.fse-source { position: fixed !important; top: 0 !important; left: 0 !important; width: 1200px !important; min-height: 100vh !important; overflow: hidden !important; visibility: hidden !important; pointer-events: none !important; transform: translateX(-1400px) !important; }
 .fse-app { width: min(1500px, calc(100% - 24px)); margin: 0 auto; padding: 18px 0 32px; contain: style; }
 .fse-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
 .fse-brand { display: flex; align-items: center; gap: 14px; }
