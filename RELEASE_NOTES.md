@@ -1,5 +1,5 @@
-# FumSelector Extension 1.5.3
+# FumSelector Extension 1.5.4
 
-Fixes a blank page when opening Pooya's eligible-course groups. The retained
-calendar source now lives in a fixed off-screen layer, so it remains available
-for timetable parsing without expanding the right-to-left iframe's scroll area.
+The selected-course chip now uses Pooya's current calendar title for its
+enrolled count. For example, `آمار و احتمال مهندسی(61 نفر)` is shown as
+`61 نفر انتخاب کرده‌اند`, even when the eligible-course table has an old value.

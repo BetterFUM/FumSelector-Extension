@@ -256,6 +256,13 @@
     return { start, end };
   }
 
+  function calendarEnrollment(node) {
+    const title = normalize(text(node.querySelector('.wc-title') ?? node));
+    const match = /\((\d+)\s*نفر\)/.exec(title);
+    const enrolled = Number(match?.[1]);
+    return Number.isFinite(enrolled) ? enrolled : null;
+  }
+
   function calendarSession(node, source) {
     const inner = node.closest('.wc-day-column-inner');
     const hourCells = [...source.querySelectorAll('.wc-grid-timeslot-header .wc-time-header-cell')];
@@ -445,10 +452,14 @@
     }
 
     function courseFromCalendar(course) {
-      const sessions = calendarEventsFor(course)
+      const events = calendarEventsFor(course);
+      const sessions = events
         .map(node => calendarSession(node, source))
         .filter(session => session.day || Number.isFinite(session.start));
-      return sessions.length ? { ...course, sessions } : course;
+      const enrolled = events.map(calendarEnrollment).find(Number.isFinite);
+      return sessions.length
+        ? { ...course, sessions, ...(Number.isFinite(enrolled) ? { enrolled } : {}) }
+        : course;
     }
 
     function readPlanFromCalendar() {

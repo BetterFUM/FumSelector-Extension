@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.4
+
+- Read the enrolled count for selected courses directly from each Pooya
+  calendar title, such as `آمار و احتمال مهندسی(61 نفر)`.
+
 ## 1.5.3
 
 - Fixed the blank eligible-course page in Pooya's RTL iframe by moving the
