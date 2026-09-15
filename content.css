@@ -114,6 +114,9 @@
 .fse-table tbody tr.fse-row--selected:hover { background: #eafbed; }
 .fse-table tbody tr.fse-row--passed { background: #d2eaf7; color: #1e3a4f; }
 .fse-table tbody tr.fse-row--passed:hover { background: #c7e4f4; }
+.fse-table tbody tr.fse-row--portal-colour { background: color-mix(in srgb, var(--fse-portal-row) 28%, white); }
+.fse-table tbody tr.fse-row--portal-colour:hover { background: color-mix(in srgb, var(--fse-portal-row) 40%, white); }
+.fse-table tbody tr.fse-row--selected.fse-row--portal-colour { box-shadow: inset 4px 0 0 #16a34a; }
 .fse-course-title { margin-bottom: 4px; color: #172033; font-size: 11.5px; font-weight: 750; }
 .fse-metadata, .fse-times { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 .fse-professor { min-width: 135px; font-size: 11px; }

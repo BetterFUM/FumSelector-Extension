@@ -39,46 +39,15 @@
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
-  function clock(total) {
-    return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  function portalRowColour(value) {
+    const colour = String(value ?? '').trim();
+    const compact = colour.toLowerCase().replace('#', '');
+    if (!colour || compact === 'fff' || compact === 'ffffff') return '';
+    return CSS.supports('color', colour) ? colour : '';
   }
 
-  // This is only a fallback for rows that have not yet been added to Pooya's
-  // calendar. The selected plan itself is read from the calendar cells below,
-  // rather than trying to infer it from the tooltip's prose.
-  function parseSessionFallback(raw) {
-    const clean = raw.replace(/\s+/g, ' ').trim();
-    const words = clean.split(' ');
-    const dayStart = words.indexOf('روز');
-    const timeStart = words.indexOf('ساعت');
-    const durationStart = words.indexOf('مدت');
-    const roomStart = words.indexOf('در');
-    if (dayStart < 0 || timeStart < 0 || durationStart < 0 || roomStart < 0) {
-      return { raw: clean, label: clean, room: '', day: '', start: null, end: null, alternating: false, parity: '' };
-    }
-
-    const day = words.slice(dayStart + 1, timeStart).join(' ');
-    const [hourText, minuteText = '0'] = (words[timeStart + 1] ?? '').split(':');
-    const hour = Number(hourText);
-    const minute = Number(minuteText);
-    const duration = Number(words[durationStart + 1]);
-    const start = Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : null;
-    const end = Number.isFinite(start) && Number.isFinite(duration) ? start + duration : null;
-    const frequency = clean.slice(clean.indexOf('(') + 1, clean.indexOf('به مدت')).trim();
-    const place = words.slice(roomStart + 1).join(' ').replace(/\)\s*شروع.*$/, '').trim();
-    const parity = clean.includes('شروع فرد') ? 'فرد' : clean.includes('شروع زوج') ? 'زوج' : '';
-    const alternating = frequency.includes('در میان') || Boolean(parity);
-    const room = place.replace(/^\s*کلاس\s*/, '').trim();
-    return {
-      raw: clean,
-      label: Number.isFinite(start) && Number.isFinite(end) ? `${day} ${clock(start)}–${clock(end)}${alternating ? ` (${parity || 'یک‌هفته‌درمیان'})` : ''}` : clean,
-      room: room === '0' ? '' : room,
-      day,
-      start,
-      end,
-      alternating,
-      parity
-    };
+  function clock(total) {
+    return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
   }
 
   function injectFont() {
@@ -95,26 +64,6 @@
       }
     `;
     (document.head ?? document.documentElement).append(style);
-  }
-
-  function parseDetails(title) {
-    const bodyStart = title.indexOf('body=[');
-    const bodyEnd = title.lastIndexOf(']');
-    const body = bodyStart >= 0 && bodyEnd > bodyStart ? title.slice(bodyStart + 6, bodyEnd) : '';
-    if (!body) return { sessions: [], details: '' };
-
-    const holder = document.createElement('div');
-    holder.innerHTML = body.replace(/<br\s*\/?>/gi, '\n');
-    const lines = (holder.textContent ?? '')
-      .split('\n')
-      .map(line => line.replace(/\s+/g, ' ').trim())
-      .filter(Boolean);
-    return {
-      sessions: lines
-        .filter(line => line.startsWith('جلسه'))
-        .map(line => parseSessionFallback(line.slice(line.indexOf(':') + 1))),
-      details: lines.join(' • ')
-    };
   }
 
   function isCourseTable(table) {
@@ -136,10 +85,10 @@
       const group = text(cells[2]);
       if (!/^\d+$/.test(normalize(code)) || !group) return [];
 
-      const { sessions, details } = parseDetails(cells[9]?.querySelector('img')?.getAttribute('title') ?? '');
       const enrolled = asInt(text(cells[5]));
       const capacity = asInt(text(cells[6]));
       const sourceControl = row.querySelector('input[type="checkbox"]');
+      const sourceColor = (row.getAttribute('bgcolor') ?? '').trim();
       return [{
         id: `${code}/${group}`,
         code,
@@ -150,9 +99,12 @@
         capacity,
         faculty: text(cells[7]),
         professor: text(cells[8]),
-        sessions,
-        details,
-        passed: (row.getAttribute('bgcolor') ?? '').trim().toLowerCase() === PASSED_COLOUR,
+        // Course metadata and portal state come from the row's native cells.
+        // Timing is intentionally left empty here: after a course is added,
+        // it is read only from Pooya's calendar table.
+        sessions: [],
+        sourceColor,
+        passed: sourceColor.toLowerCase() === PASSED_COLOUR,
         sourceControl
       }];
     });
@@ -604,7 +556,8 @@
         if (key === 'units') return Number(course.units) || 0;
         if (key === 'capacity') return course.capacity ? Math.max(0, course.capacity - course.enrolled) : -1;
         if (key === 'time') {
-          return (course.sessions ?? []).reduce((earliest, session) => {
+          const scheduledCourse = plan.find(item => item.id === course.id) ?? course;
+          return (scheduledCourse.sessions ?? []).reduce((earliest, session) => {
             const dayIndex = WEEK_DAYS.findIndex(day => normalize(day).replace(/\s/g, '') === normalize(session.day).replace(/\s/g, ''));
             if (dayIndex < 0 || !Number.isFinite(session.start)) return earliest;
             return Math.min(earliest, dayIndex * 1440 + session.start);
@@ -787,10 +740,17 @@
 
       for (const course of visible) {
         const selected = isSelected(course);
+        const scheduledCourse = plan.find(item => item.id === course.id) ?? course;
         const conflicts = selected || course.passed ? [] : conflictsFor(course);
         const row = document.createElement('tr');
         if (course.passed) row.className = 'fse-row--passed';
         else if (selected) row.className = 'fse-row--selected';
+        const portalColour = portalRowColour(course.sourceColor);
+        if (portalColour && !course.passed) {
+          row.classList.add('fse-row--portal-colour');
+          row.style.setProperty('--fse-portal-row', portalColour);
+          row.title = 'رنگ وضعیت از جدول اصلی پویا';
+        }
 
         const courseCell = el('td', 'fse-course-cell');
         const courseTitle = el('div', 'fse-course-title', course.name || 'بدون نام');
@@ -813,10 +773,10 @@
         unitsCell.append(chip(String(course.units), 'amber'));
 
         const timeCell = el('td', 'fse-times');
-        if (course.sessions.length === 0) {
-          timeCell.append(el('span', 'fse-muted', 'زمان ثبت نشده'));
+        if (scheduledCourse.sessions.length === 0) {
+          timeCell.append(el('span', 'fse-muted', selected ? 'زمانی در تقویم پویا ثبت نشده' : 'پس از افزودن، از تقویم پویا خوانده می‌شود'));
         } else {
-          course.sessions.forEach(session => timeCell.append(chip(session.label, 'purple', session.room ? `کلاس ${session.room}` : session.raw)));
+          scheduledCourse.sessions.forEach(session => timeCell.append(chip(session.label, 'purple', session.room ? `کلاس ${session.room}` : session.raw)));
         }
         if (conflicts.length > 0) {
           const note = el('span', 'fse-conflict-note');

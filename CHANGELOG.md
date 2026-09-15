@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.1
+
+- Removed tooltip-based session parsing entirely.
+- Read course metadata and row state directly from Pooya's eligible-course
+  table; retain its non-white row colours in the redesigned list.
+- Read selected-course timing exclusively from the weekly calendar table.
+
 ## 1.5.0
 
 - Read the selected plan's day, start/end time, room and odd/even-week marker
