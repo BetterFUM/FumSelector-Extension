@@ -1,12 +1,14 @@
-:root { color-scheme: light !important; }
+:root, html.fse-frame { color-scheme: light !important; }
+html.fse-frame { width: 100% !important; min-width: 0 !important; min-height: 100% !important; overflow: auto !important; }
 .fse-page,
 .fse-page * {
   box-sizing: border-box;
   font-family: "FSE Vazirmatn", Vazirmatn, Tahoma, sans-serif !important;
 }
 .fse-page {
-  min-width: 760px;
-  min-height: 100vh;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
   margin: 0 !important;
   direction: rtl;
   color: #172033;
@@ -14,11 +16,12 @@
   font-family: "FSE Vazirmatn", Vazirmatn, Tahoma, sans-serif !important;
   font-size: 13px;
   line-height: 1.5;
+  overflow-x: hidden;
 }
 .fse-page button,
 .fse-page input,
 .fse-page select { font: inherit; }
-.fse-source { display: none !important; }
+.fse-source { position: absolute !important; top: 0 !important; left: -100000px !important; width: 1200px !important; min-height: 100vh !important; overflow: hidden !important; visibility: hidden !important; pointer-events: none !important; }
 .fse-app { width: min(1500px, calc(100% - 24px)); margin: 0 auto; padding: 18px 0 32px; contain: style; }
 .fse-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
 .fse-brand { display: flex; align-items: center; gap: 14px; }
@@ -50,7 +53,7 @@
 .fse-plan-chip { display: inline-grid; grid-template-columns: 1fr auto; column-gap: 6px; padding: 5px 8px 5px 6px; border: 1px solid #bfdbfe; border-radius: 10px; color: #1e3a8a; background: #eff6ff; }
 .fse-plan-chip strong { font-size: 10.5px; font-weight: 750; }
 .fse-plan-chip small { grid-row: 2; color: #6080b8; font-size: 9px; font-variant-numeric: tabular-nums; }
-.fse-plan-chip .fse-chip--professor { grid-column: 1; grid-row: 3; justify-self: start; width: fit-content; margin-top: 3px; }
+.fse-plan-course-details { grid-column: 1; grid-row: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 3px; margin-top: 3px; }
 .fse-plan-chip button { grid-column: 2; grid-row: 1 / 4; align-self: center; width: 21px; height: 21px; padding: 0; border: 0; border-radius: 7px; color: #2563eb; background: transparent; cursor: pointer; font-size: 18px; line-height: 1; }
 .fse-plan-chip button:hover { color: #b91c1c; background: #fee2e2; }
 
@@ -69,6 +72,8 @@
 .fse-course-block strong { font-size: 9px; font-weight: 800; }
 .fse-course-block em { margin-top: 1px; font-size: 7.5px; font-style: normal; opacity: .93; }
 .fse-course-block span { margin-top: 1px; font-size: 7.5px; opacity: .88; font-variant-numeric: tabular-nums; }
+.fse-block-overflow { display: inline-flex; align-items: center; gap: 1px; color: #fecaca; font-size: 7px; font-weight: 800; }
+.fse-block-overflow .fse-icon { width: 9px; height: 9px; color: #fca5a5; }
 .fse-block-remove { position: absolute; top: 4px; left: 4px; width: 17px; height: 17px; padding: 0; border: 0; border-radius: 5px; color: white; background: rgba(15, 23, 42, .24); cursor: pointer; font-size: 14px; line-height: 16px; }
 .fse-block-remove:hover { background: rgba(127, 29, 29, .75); }
 .fse-block-warning { position: absolute; left: 23px; bottom: 3px; display: inline-flex; align-items: center; gap: 2px; color: #fff7cc; font-size: 7px; }
@@ -132,6 +137,9 @@
 .fse-chip--green { color: #15803d; background: #dcfce7; }
 .fse-chip--red { color: #b91c1c; background: #fee2e2; }
 .fse-chip--professor { color: #047857; background: #d1fae5; }
+.fse-chip--enrollment { color: #075985; background: #e0f2fe; }
+.fse-overflow-alert { display: inline-flex; align-items: center; gap: 2px; color: #b91c1c; font-size: 8px; font-weight: 800; white-space: nowrap; }
+.fse-overflow-alert .fse-icon { width: 11px; height: 11px; color: #dc2626; }
 .fse-conflict-note { width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 2px; color: #a16207; font-size: 9px; font-weight: 750; }
 .fse-conflict-note .fse-icon { width: 12px; height: 12px; }
 
@@ -169,7 +177,6 @@
 .fse-dialog-conflict span { margin-top: 2px; color: #a16207; font-size: 9px; }
 .fse-dialog-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 7px; margin-top: 3px; }
 
-/* Pooya's original delete dialog stays functional; only its presentation is replaced. */
 .fse-page .ui-widget-overlay {
   position: fixed !important; inset: 0 !important; z-index: 1000 !important;
   width: auto !important; height: auto !important; opacity: 1 !important;
@@ -231,4 +238,15 @@
 @media (max-width: 1050px) {
   .fse-filters { grid-template-columns: 1fr 220px; }
   .fse-segments { grid-column: 1 / -1; justify-content: center; }
+}
+
+@media (max-width: 760px) {
+  .fse-app { width: calc(100% - 12px); padding: 8px 0 20px; }
+  .fse-plan { padding: 9px; }
+  .fse-section-head { align-items: flex-start; }
+  .fse-section-head p { display: none; }
+  .fse-filters { position: static; grid-template-columns: 1fr; gap: 6px; padding: 7px; }
+  .fse-segments { grid-column: auto; justify-content: flex-start; overflow-x: auto; }
+  .fse-segment { flex: 0 0 auto; }
+  .fse-table { min-width: 760px; }
 }

@@ -46,8 +46,55 @@
     return CSS.supports('color', colour) ? colour : '';
   }
 
+  function courseEnrollment(course) {
+    const enrolled = Math.max(0, Number(course.enrolled) || 0);
+    const capacity = Math.max(0, Number(course.capacity) || 0);
+    const overflow = capacity > 0 ? Math.max(0, enrolled - capacity) : 0;
+    return { enrolled, capacity, overflow };
+  }
+
   function clock(total) {
     return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  }
+
+  function parseSession(raw) {
+    const clean = raw.replace(/\s+/g, ' ').trim();
+    const match = /^روز\s+(.+?)\s+ساعت\s+(\d{1,2})(?::(\d{2}))?\s*\((.+?)\s+به مدت\s+(\d+)\s+دقیقه\s+در\s+(.*?)\s*\)\s*(?:شروع\s+(\S+))?/.exec(clean);
+    if (!match) return { raw: clean, label: clean, room: '', day: '', start: null, end: null, alternating: false, parity: '' };
+
+    const [, day, hour, minute = '0', frequency, duration, place, parity = ''] = match;
+    const start = Number(hour) * 60 + Number(minute);
+    const end = start + Number(duration);
+    const alternating = frequency.includes('در میان');
+    const room = place.replace(/^\s*کلاس\s*/, '').trim();
+    return {
+      raw: clean,
+      label: `${day} ${clock(start)}–${clock(end)}${alternating ? ` (${parity || 'یک‌هفته‌درمیان'})` : ''}`,
+      room: room === '0' ? '' : room,
+      day,
+      start,
+      end,
+      alternating,
+      parity
+    };
+  }
+
+  function parseDetails(title) {
+    const body = /\bbody=\[([\s\S]*?)\]\s*$/.exec(title.trim())?.[1] ?? '';
+    if (!body) return { sessions: [], details: '' };
+
+    const holder = document.createElement('div');
+    holder.innerHTML = body.replace(/<br\s*\/?>/gi, '\n');
+    const lines = (holder.textContent ?? '')
+      .split('\n')
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+    return {
+      sessions: lines
+        .filter(line => line.startsWith('جلسه'))
+        .map(line => parseSession(line.replace(/^جلسه\s+\S+:\s*/, ''))),
+      details: lines.join(' • ')
+    };
   }
 
   function injectFont() {
@@ -85,6 +132,7 @@
       const group = text(cells[2]);
       if (!/^\d+$/.test(normalize(code)) || !group) return [];
 
+      const { sessions } = parseDetails(cells[9]?.querySelector('img')?.getAttribute('title') ?? '');
       const enrolled = asInt(text(cells[5]));
       const capacity = asInt(text(cells[6]));
       const sourceControl = row.querySelector('input[type="checkbox"]');
@@ -99,10 +147,7 @@
         capacity,
         faculty: text(cells[7]),
         professor: text(cells[8]),
-        // Course metadata and portal state come from the row's native cells.
-        // Timing is intentionally left empty here: after a course is added,
-        // it is read only from Pooya's calendar table.
-        sessions: [],
+        sessions,
         sourceColor,
         passed: sourceColor.toLowerCase() === PASSED_COLOUR,
         sourceControl
@@ -191,6 +236,26 @@
     return hour;
   }
 
+  function calendarTimeRange(node) {
+    const value = normalize(text(node.querySelector('.wc-time')));
+    const divider = value.indexOf('الی');
+    if (divider < 0) return { start: null, end: null };
+    const parsePart = part => {
+      const [hourValue, minuteValue = '0'] = part.trim().split(':');
+      const digits = [...hourValue].filter(character => character >= '0' && character <= '9').join('');
+      const minutes = Number(minuteValue);
+      const hour = Number(digits);
+      if (!digits || !Number.isFinite(hour) || !Number.isFinite(minutes)) return null;
+      return hour * 60 + minutes;
+    };
+    let start = parsePart(value.slice(0, divider));
+    let end = parsePart(value.slice(divider + 3));
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return { start: null, end: null };
+    if (start < 6 * 60) start += 12 * 60;
+    if (end <= start) end += 12 * 60;
+    return { start, end };
+  }
+
   function calendarSession(node, source) {
     const inner = node.closest('.wc-day-column-inner');
     const hourCells = [...source.querySelectorAll('.wc-grid-timeslot-header .wc-time-header-cell')];
@@ -199,12 +264,15 @@
     const top = Number.parseFloat(node.style.top ?? '');
     const height = Number.parseFloat(node.style.height ?? '');
     const pixelsPerHour = gridHeight > 0 && hourCells.length > 0 ? gridHeight / hourCells.length : 0;
-    const start = Number.isFinite(firstHour) && pixelsPerHour > 0 && Number.isFinite(top)
+    const positionedStart = Number.isFinite(firstHour) && pixelsPerHour > 0 && top > 0
       ? Math.round((firstHour * 60 + (top / pixelsPerHour) * 60) / 5) * 5
       : null;
-    const end = Number.isFinite(start) && pixelsPerHour > 0 && Number.isFinite(height)
-      ? Math.round((start + (height / pixelsPerHour) * 60) / 5) * 5
+    const positionedEnd = Number.isFinite(positionedStart) && pixelsPerHour > 0 && height > 0
+      ? Math.round((positionedStart + (height / pixelsPerHour) * 60) / 5) * 5
       : null;
+    const range = calendarTimeRange(node);
+    const start = Number.isFinite(positionedStart) && Number.isFinite(positionedEnd) ? positionedStart : range.start;
+    const end = Number.isFinite(positionedStart) && Number.isFinite(positionedEnd) ? positionedEnd : range.end;
     const raw = text(node.querySelector('.wc-title') ?? node);
     const parity = raw.includes('شروع فرد') ? 'فرد' : raw.includes('شروع زوج') ? 'زوج' : '';
     const alternating = raw.includes('در میان') || Boolean(parity);
@@ -233,9 +301,6 @@
     if (courses.length === 0) return;
     courses.forEach((course, index) => { course.sourceIndex = index; });
 
-    // Pooya's checkboxes are only transient controls and may be unchecked even
-    // while a course is already present in the calendar. The calendar events
-    // are therefore the single source of truth for selected courses.
     let plan = [];
     let query = '';
     let professor = '';
@@ -248,6 +313,7 @@
     const source = el('div', 'fse-source');
     source.append(...document.body.childNodes);
     document.body.replaceChildren();
+    document.documentElement.classList.add('fse-frame');
     document.body.className = 'fse-page';
 
     const app = el('main', 'fse-app');
@@ -428,13 +494,9 @@
 
       if (selected) {
         if (!control || control.disabled) return false;
-        // A real checkbox click runs Pooya's NewEvent(...) add handler. Its
-        // checked state is deliberately ignored when reading the current plan.
         if (control.checked) control.checked = false;
         control.click();
       } else {
-        // Pooya attaches its real delete behavior to the rendered calendar
-        // event. Clicking that event preserves its own request and UI flow.
         const calendarEvent = calendarEventsFor(course)[0];
         if (!calendarEvent) return false;
         calendarEvent.click();
@@ -610,10 +672,22 @@
 
       for (const course of plan) {
         const item = el('span', 'fse-plan-chip');
+        const enrollment = courseEnrollment(course);
+        const details = el('span', 'fse-plan-course-details');
+        details.append(
+          chip(course.professor || 'استاد اعلام نشده', 'professor'),
+          chip(`${enrollment.enrolled} نفر انتخاب کرده‌اند`, 'enrollment')
+        );
+        if (enrollment.overflow > 0) {
+          const alert = el('span', 'fse-overflow-alert');
+          alert.title = `${enrollment.overflow} نفر بیش از ظرفیت این درس را انتخاب کرده‌اند`;
+          alert.append(icon('warning'), document.createTextNode(`${enrollment.overflow} نفر مازاد ظرفیت`));
+          details.append(alert);
+        }
         item.append(
           el('strong', '', course.name),
           el('small', '', `${course.code} · گروه ${course.group}`),
-          chip(course.professor || 'استاد اعلام نشده', 'professor')
+          details
         );
         const remove = el('button', '', '×');
         remove.type = 'button';
@@ -708,11 +782,20 @@
             event.stopPropagation();
             setCourseSelected(block.course, false);
           });
+          const enrollment = courseEnrollment(block.course);
+          const timing = el('span', '');
+          timing.append(document.createTextNode(`${clock(block.session.start)}–${clock(block.session.end)} · ${enrollment.enrolled} نفر${block.session.alternating ? ` · ${block.session.parity || 'یک‌هفته‌درمیان'}` : ''}${block.session.room ? ` · ${block.session.room}` : ''}`));
+          if (enrollment.overflow > 0) {
+            const alert = el('b', 'fse-block-overflow');
+            alert.title = `${enrollment.overflow} نفر بیش از ظرفیت این درس را انتخاب کرده‌اند`;
+            alert.append(icon('warning'), document.createTextNode(`${enrollment.overflow} نفر مازاد`));
+            timing.append(document.createTextNode(' · '), alert);
+          }
           courseBlock.append(
             remove,
             el('strong', '', block.course.name),
             el('em', '', block.course.professor || 'استاد اعلام نشده'),
-            el('span', '', `${clock(block.session.start)}–${clock(block.session.end)}${block.session.alternating ? ` · ${block.session.parity || 'یک‌هفته‌درمیان'}` : ''}${block.session.room ? ` · ${block.session.room}` : ''}`)
+            timing
           );
           if (block.conflicting) {
             const warning = el('b', 'fse-block-warning');
@@ -833,9 +916,18 @@
     render();
   }
 
+  function fitPortalFrame() {
+    const frame = document.getElementById('LeftScr');
+    if (!frame) return;
+    const height = `${Math.max(520, window.innerHeight - 48)}px`;
+    frame.style.setProperty('display', 'block', 'important');
+    frame.style.setProperty('width', '100%', 'important');
+    frame.style.setProperty('height', height, 'important');
+    frame.parentElement?.style.setProperty('height', height, 'important');
+  }
+
   function boot() {
-    // The extension is injected into every Pooya frame so it can reach
-    // `LeftScr`, but only this document should be redesigned.
+    fitPortalFrame();
     const isDemo = document.documentElement.dataset.fseDemo === '1';
     if (!isDemo && !/\/ShowCoursesWithPreSelect\.php$/i.test(location.pathname)) return;
 

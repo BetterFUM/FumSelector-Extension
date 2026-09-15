@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.2
+
+- Restored the portal tooltip parser for the eligible-course table's time column.
+- Read timetable placement from Pooya's calendar event day and displayed time,
+  including when the portal reports zero event geometry.
+- Keep the source calendar off-screen instead of removing it from layout and
+  size the portal iframe to prevent a blank embedded page.
+- Added enrolled-count chips and overflow-capacity warnings to selected courses.
+- Removed source comments from the extension files.
+
 ## 1.5.1
 
 - Removed tooltip-based session parsing entirely.
