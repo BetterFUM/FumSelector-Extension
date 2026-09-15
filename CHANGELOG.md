@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.5
+
+- Kept the over-capacity warning inline with the selected-course chips.
+
 ## 1.5.4
 
 - Read the enrolled count for selected courses directly from each Pooya

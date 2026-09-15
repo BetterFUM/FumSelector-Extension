@@ -53,7 +53,7 @@ html.fse-frame { width: 100% !important; min-width: 0 !important; min-height: 10
 .fse-plan-chip { display: inline-grid; grid-template-columns: 1fr auto; column-gap: 6px; padding: 5px 8px 5px 6px; border: 1px solid #bfdbfe; border-radius: 10px; color: #1e3a8a; background: #eff6ff; }
 .fse-plan-chip strong { font-size: 10.5px; font-weight: 750; }
 .fse-plan-chip small { grid-row: 2; color: #6080b8; font-size: 9px; font-variant-numeric: tabular-nums; }
-.fse-plan-course-details { grid-column: 1; grid-row: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 3px; margin-top: 3px; }
+.fse-plan-course-details { grid-column: 1; grid-row: 3; display: flex; flex-wrap: nowrap; align-items: center; gap: 3px; min-width: 0; margin-top: 3px; }
 .fse-plan-chip button { grid-column: 2; grid-row: 1 / 4; align-self: center; width: 21px; height: 21px; padding: 0; border: 0; border-radius: 7px; color: #2563eb; background: transparent; cursor: pointer; font-size: 18px; line-height: 1; }
 .fse-plan-chip button:hover { color: #b91c1c; background: #fee2e2; }
 
@@ -138,7 +138,7 @@ html.fse-frame { width: 100% !important; min-width: 0 !important; min-height: 10
 .fse-chip--red { color: #b91c1c; background: #fee2e2; }
 .fse-chip--professor { color: #047857; background: #d1fae5; }
 .fse-chip--enrollment { color: #075985; background: #e0f2fe; }
-.fse-overflow-alert { display: inline-flex; align-items: center; gap: 2px; color: #b91c1c; font-size: 8px; font-weight: 800; white-space: nowrap; }
+.fse-overflow-alert { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; color: #b91c1c; font-size: 8px; font-weight: 800; white-space: nowrap; }
 .fse-overflow-alert .fse-icon { width: 11px; height: 11px; color: #dc2626; }
 .fse-conflict-note { width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 2px; color: #a16207; font-size: 9px; font-weight: 750; }
 .fse-conflict-note .fse-icon { width: 12px; height: 12px; }
