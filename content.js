@@ -43,19 +43,35 @@
     return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
   }
 
-  function parseSession(raw) {
+  // This is only a fallback for rows that have not yet been added to Pooya's
+  // calendar. The selected plan itself is read from the calendar cells below,
+  // rather than trying to infer it from the tooltip's prose.
+  function parseSessionFallback(raw) {
     const clean = raw.replace(/\s+/g, ' ').trim();
-    const match = /^روز\s+(.+?)\s+ساعت\s+(\d{1,2})(?::(\d{2}))?\s*\((.+?)\s+به مدت\s+(\d+)\s+دقیقه\s+در\s+(.*?)\s*\)\s*(?:شروع\s+(\S+))?/.exec(clean);
-    if (!match) return { raw: clean, label: clean, room: '', day: '', start: null, end: null, alternating: false, parity: '' };
+    const words = clean.split(' ');
+    const dayStart = words.indexOf('روز');
+    const timeStart = words.indexOf('ساعت');
+    const durationStart = words.indexOf('مدت');
+    const roomStart = words.indexOf('در');
+    if (dayStart < 0 || timeStart < 0 || durationStart < 0 || roomStart < 0) {
+      return { raw: clean, label: clean, room: '', day: '', start: null, end: null, alternating: false, parity: '' };
+    }
 
-    const [, day, hour, minute = '0', frequency, duration, place, parity = ''] = match;
-    const start = Number(hour) * 60 + Number(minute);
-    const end = start + Number(duration);
-    const alternating = frequency.includes('در میان');
+    const day = words.slice(dayStart + 1, timeStart).join(' ');
+    const [hourText, minuteText = '0'] = (words[timeStart + 1] ?? '').split(':');
+    const hour = Number(hourText);
+    const minute = Number(minuteText);
+    const duration = Number(words[durationStart + 1]);
+    const start = Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : null;
+    const end = Number.isFinite(start) && Number.isFinite(duration) ? start + duration : null;
+    const frequency = clean.slice(clean.indexOf('(') + 1, clean.indexOf('به مدت')).trim();
+    const place = words.slice(roomStart + 1).join(' ').replace(/\)\s*شروع.*$/, '').trim();
+    const parity = clean.includes('شروع فرد') ? 'فرد' : clean.includes('شروع زوج') ? 'زوج' : '';
+    const alternating = frequency.includes('در میان') || Boolean(parity);
     const room = place.replace(/^\s*کلاس\s*/, '').trim();
     return {
       raw: clean,
-      label: `${day} ${clock(start)}–${clock(end)}${alternating ? ` (${parity || 'یک‌هفته‌درمیان'})` : ''}`,
+      label: Number.isFinite(start) && Number.isFinite(end) ? `${day} ${clock(start)}–${clock(end)}${alternating ? ` (${parity || 'یک‌هفته‌درمیان'})` : ''}` : clean,
       room: room === '0' ? '' : room,
       day,
       start,
@@ -82,7 +98,9 @@
   }
 
   function parseDetails(title) {
-    const body = /\bbody=\[([\s\S]*?)\]\s*$/.exec(title.trim())?.[1] ?? '';
+    const bodyStart = title.indexOf('body=[');
+    const bodyEnd = title.lastIndexOf(']');
+    const body = bodyStart >= 0 && bodyEnd > bodyStart ? title.slice(bodyStart + 6, bodyEnd) : '';
     if (!body) return { sessions: [], details: '' };
 
     const holder = document.createElement('div');
@@ -94,7 +112,7 @@
     return {
       sessions: lines
         .filter(line => line.startsWith('جلسه'))
-        .map(line => parseSession(line.replace(/^جلسه\s+\S+:\s*/, ''))),
+        .map(line => parseSessionFallback(line.slice(line.indexOf(':') + 1))),
       details: lines.join(' • ')
     };
   }
@@ -190,9 +208,68 @@
   function calendarEventIdentity(node) {
     const title = text(node.querySelector('.wc-title') ?? node);
     const normalized = normalize(title);
-    const match = /^(.*?)\s*\(\s*\d+\s*نفر\s*\)\s*,?\s*گروه\s*(\d+)/.exec(normalized);
-    if (!match) return null;
-    return { name: courseNameKey(match[1]), group: match[2] };
+    const groupStart = normalized.indexOf('گروه');
+    if (groupStart < 0) return null;
+
+    const beforeGroup = normalized.slice(0, groupStart);
+    const courseEnd = beforeGroup.lastIndexOf('(');
+    const afterGroup = normalized.slice(groupStart + 'گروه'.length).trim();
+    const groupEnd = [...afterGroup].findIndex(character => character === ' ' || character === ',' || character === '،' || character === '(' || character === ')');
+    const group = afterGroup.slice(0, groupEnd < 0 ? afterGroup.length : groupEnd);
+    if (courseEnd < 0 || !group) return null;
+    return { name: courseNameKey(beforeGroup.slice(0, courseEnd)), group };
+  }
+
+  function calendarDay(node, source) {
+    const column = node.closest('.wc-day-column');
+    const className = [...(column?.classList ?? [])].find(value => value.startsWith('day-'));
+    const dayIndex = Number(className?.slice(4));
+    if (!Number.isInteger(dayIndex) || dayIndex < 1) return '';
+    return text(source.querySelector(`.wc-day-column-header.wc-day-${dayIndex}`)).replace(/\s+/g, ' ').trim();
+  }
+
+  function hourFromCalendarHeader(value) {
+    const normalized = normalize(value);
+    const digits = [...normalized].filter(character => character >= '0' && character <= '9').join('');
+    if (!digits) return null;
+    let hour = Number(digits);
+    if (!Number.isFinite(hour)) return null;
+    if (normalized.includes('pm') && hour < 12) hour += 12;
+    if (normalized.includes('am') && hour === 12) hour = 0;
+    return hour;
+  }
+
+  function calendarSession(node, source) {
+    const inner = node.closest('.wc-day-column-inner');
+    const hourCells = [...source.querySelectorAll('.wc-grid-timeslot-header .wc-time-header-cell')];
+    const firstHour = hourFromCalendarHeader(text(hourCells[0]));
+    const gridHeight = Number.parseFloat(inner?.style.height ?? '');
+    const top = Number.parseFloat(node.style.top ?? '');
+    const height = Number.parseFloat(node.style.height ?? '');
+    const pixelsPerHour = gridHeight > 0 && hourCells.length > 0 ? gridHeight / hourCells.length : 0;
+    const start = Number.isFinite(firstHour) && pixelsPerHour > 0 && Number.isFinite(top)
+      ? Math.round((firstHour * 60 + (top / pixelsPerHour) * 60) / 5) * 5
+      : null;
+    const end = Number.isFinite(start) && pixelsPerHour > 0 && Number.isFinite(height)
+      ? Math.round((start + (height / pixelsPerHour) * 60) / 5) * 5
+      : null;
+    const raw = text(node.querySelector('.wc-title') ?? node);
+    const parity = raw.includes('شروع فرد') ? 'فرد' : raw.includes('شروع زوج') ? 'زوج' : '';
+    const alternating = raw.includes('در میان') || Boolean(parity);
+    const roomStart = raw.lastIndexOf('(');
+    const roomEnd = raw.lastIndexOf(')');
+    const room = roomStart >= 0 && roomEnd > roomStart ? raw.slice(roomStart + 1, roomEnd).replace(/^کلاس\s*/, '').trim() : '';
+    const day = calendarDay(node, source);
+    return {
+      raw,
+      label: Number.isFinite(start) && Number.isFinite(end) ? `${day} ${clock(start)}–${clock(end)}${alternating ? ` (${parity || 'یک‌هفته‌درمیان'})` : ''}` : day || raw,
+      room,
+      day,
+      start,
+      end,
+      alternating,
+      parity
+    };
   }
 
   function mount(table) {
@@ -225,7 +302,7 @@
     const planCard = el('section', 'fse-card fse-plan');
     const planHeader = el('div', 'fse-section-head');
     const planTitle = el('div');
-    planTitle.append(el('h2', '', 'برنامه هفتگی من'), el('p', '', 'انتخاب‌ها از تقویم اصلی پایین پویا خوانده و با همان رویدادها همگام می‌شوند.'));
+    planTitle.append(el('h2', '', 'برنامه هفتگی من'), el('p', '', 'زمان‌های انتخاب‌شده مستقیماً از جدول تقویم پویا خوانده و با همان رویدادها همگام می‌شوند.'));
     const planActions = el('div', 'fse-plan-actions');
     planHeader.append(planTitle, planActions);
     const planChips = el('div', 'fse-plan-chips');
@@ -349,6 +426,13 @@
       });
     }
 
+    function courseFromCalendar(course) {
+      const sessions = calendarEventsFor(course)
+        .map(node => calendarSession(node, source))
+        .filter(session => session.day || Number.isFinite(session.start));
+      return sessions.length ? { ...course, sessions } : course;
+    }
+
     function readPlanFromCalendar() {
       const selectedKeys = new Set(
         [...source.querySelectorAll('.wc-cal-event')]
@@ -356,7 +440,9 @@
           .filter(Boolean)
           .map(identity => `${identity.name}/${identity.group}`)
       );
-      return courses.filter(course => !course.passed && selectedKeys.has(courseCalendarKey(course)));
+      return courses
+        .filter(course => !course.passed && selectedKeys.has(courseCalendarKey(course)))
+        .map(courseFromCalendar);
     }
 
     function isSelected(course) {
@@ -571,7 +657,11 @@
 
       for (const course of plan) {
         const item = el('span', 'fse-plan-chip');
-        item.append(el('strong', '', course.name), el('small', '', `${course.code} · گروه ${course.group}`));
+        item.append(
+          el('strong', '', course.name),
+          el('small', '', `${course.code} · گروه ${course.group}`),
+          chip(course.professor || 'استاد اعلام نشده', 'professor')
+        );
         const remove = el('button', '', '×');
         remove.type = 'button';
         remove.title = `حذف ${course.name}`;

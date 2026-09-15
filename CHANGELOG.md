@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0
+
+- Read the selected plan's day, start/end time, room and odd/even-week marker
+  directly from Pooya's weekly calendar cells.
+- Show the selected instructor as a chip alongside every selected course.
+
 ## 1.4.1
 
 - Reduced table layout and paint work for smoother scrolling.

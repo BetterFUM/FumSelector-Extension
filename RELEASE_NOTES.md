@@ -1,5 +1,5 @@
-# FumSelector Extension 1.4.1
+# FumSelector Extension 1.5.0
 
-This patch improves scrolling performance on long course lists by reducing
-off-screen painting and table layout work. The GitHub README is now shorter and
-contains only a project overview and installation instructions.
+The weekly plan now reads selected events directly from Pooya's calendar table,
+including their real day, start/end time and odd/even-week marker. Each
+selected course also shows its instructor as a compact chip.
